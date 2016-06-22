@@ -12,23 +12,49 @@ using System.Windows.Forms.DataVisualization.Charting;
 
 namespace _20160524
 {
+    public enum WindowFunc
+    {
+        Hamming,
+        Hanning,
+        Blackman,
+        Rectangular,
+        None
+    }
+    public enum FTFunc
+    {
+        DFT,
+        FFT
+    }
+
     public partial class byosya : Form
     {
-        private const int CNSTMAX = 256;
-        //private const int CNSTMAX = 512;
-        private double[] y = new double[CNSTMAX];
-        double[] y_out = new double[CNSTMAX];
-        int[] y2 = new int[CNSTMAX];
-        private int[] x2 = new int[CNSTMAX];
-        private int chart_id = 0;
-        private string chart_name;
+        readonly private int CNSTMAX;
+        readonly private double[] y;
+        readonly private string filename;
+        double[] y_out;
+        int[] y2;
+        private double[] x2;
+        // 入力データの登録
+        // 現在の登録数 : 3
+        // Dictionaryの初期化
+        readonly static Dictionary<string, int> datamap = new Dictionary<string, int>()
+            {
+                { "100Hz-2KAD.txt", 2000 },
+                { "MAN01.KOE", 10000 },
+                { "WOMAN01.KOE", 10000 },
+            };
         public byosya()
         {
             InitializeComponent();
         }
-        public byosya(double[] y)
+        public byosya(int cnstmax,double[] y, string filename)
         {
+            this.CNSTMAX = cnstmax;
             this.y = y;
+            y_out = new double[CNSTMAX];
+            y2 = new int[CNSTMAX];
+            x2 = new double[CNSTMAX/2];
+            this.filename = filename;
             InitializeComponent();
         }
         private void chart1_Click(object sender, EventArgs e)
@@ -37,33 +63,27 @@ namespace _20160524
         }
         private void test()
         {
-            Complex[] sign = new Complex[CNSTMAX];
-            Complex[] do_dft = new Complex[CNSTMAX];
-            //Complex[] do_fft = new Complex[Nmax];
-            double seikika = 0;
-            for (int i = 0; i < CNSTMAX; i++)
+            WindowFunc windowfunc = WindowFunc.None;
+            foreach (RadioButton rdo in groupBox1.Controls)
             {
-                sign[i] = new Complex(y[i], 0);
+                if (rdo.Checked)
+                {
+                    String s = rdo.Text;
+                    windowfunc = (WindowFunc)Enum.Parse(typeof(WindowFunc), s);
+                }
             }
-            do_dft = Fourier.DFT(sign);
+            y_out = Fourier.Execute(y, FTFunc.DFT, windowfunc);
+            for (int i =0; i < CNSTMAX; i++)
+            {
+                y2[i] = Convert.ToInt32(y_out[i]);
+            }
 
-            for (int ii = 0; ii < CNSTMAX; ii++)
-            {
-                y_out[ii] = do_dft[ii].magnitude;
-                if (seikika < y_out[ii]) seikika = y_out[ii];
-            }
-            for (int iii =0; iii < CNSTMAX; iii++)
-            {
-                y_out[iii] = y_out[iii] / seikika * 100;
-                y2[iii] = Convert.ToInt32(y_out[iii]); //y2のdftをノルム出力したものをy2に格納します。
-
-            }
+            // 結果をファイル出力する
             String fileout = @"C:\Users\N.Ishikawa\Desktop\data\dft_out.txt";
             String yout;
             System.IO.StreamWriter kekkaout = new System.IO.StreamWriter(fileout);
             for (int iii = 0; iii < CNSTMAX; iii++)
             {
-                //y2[iii] = Convert.ToInt32(y[iii]);
                 yout = y2[iii].ToString("D10");
                 kekkaout.WriteLine(yout);
             }
@@ -71,33 +91,27 @@ namespace _20160524
         }
         private void test2()
         {
-            Complex[] sign = new Complex[CNSTMAX];
-            Complex[] do_fft = new Complex[CNSTMAX];
-            //Complex[] do_fft = new Complex[Nmax];
-            double seikika = 0;
+            WindowFunc windowfunc = WindowFunc.None;
+            foreach (RadioButton rdo in groupBox1.Controls)
+            {
+                if (rdo.Checked)
+                {
+                    String s = rdo.Text;
+                    windowfunc = (WindowFunc)Enum.Parse(typeof(WindowFunc), s);
+                }
+            }
+            y_out = Fourier.Execute(y, FTFunc.DFT, windowfunc);
             for (int i = 0; i < CNSTMAX; i++)
             {
-                sign[i] = new Complex(y[i], 0);
+                y2[i] = Convert.ToInt32(y_out[i]);
             }
-            do_fft = Fourier.FFT(sign);
 
-            for (int ii = 0; ii < CNSTMAX; ii++)
-            {
-                y_out[ii] = do_fft[ii].magnitude;
-                if (seikika < y_out[ii]) seikika = y_out[ii];
-            }
-            for (int iii = 0; iii < CNSTMAX; iii++)
-            {
-                y_out[iii] = y_out[iii] / seikika * 100;
-                y2[iii] = Convert.ToInt32(y_out[iii]); //y2のdftをノルム出力したものをy2に格納します。
-
-            }
+            // 結果をファイル出力する
             String fileout = @"C:\Users\N.Ishikawa\Desktop\data\fft_out.txt";
             String yout;
             System.IO.StreamWriter kekkaout = new System.IO.StreamWriter(fileout);
             for (int iii = 0; iii < CNSTMAX; iii++)
             {
-                //y2[iii] = Convert.ToInt32(y[iii]);
                 yout = y2[iii].ToString("D10");
                 kekkaout.WriteLine(yout);
             }
@@ -128,11 +142,6 @@ namespace _20160524
                     max = y2[j];
                     max_num = j;
                 }
-                if (max == y2[j])
-                {
-                    num++;
-                }
-
             }
             //Dim s As String;
             String s = "max = ";
@@ -147,6 +156,7 @@ namespace _20160524
         {
             //
             // Titles,Series,ChartAreasはchartコントロール直下のメンバ
+            // 全てに初期化を実行すること
             chart1.Titles.Clear();
             chart1.Series.Clear();
             chart1.ChartAreas.Clear();
@@ -156,51 +166,37 @@ namespace _20160524
             seriesLine.LegendText = "Legend:Line";       // 凡例
 
             chart1.ChartAreas.Add(new ChartArea("Area1"));            // ChartArea作成
-            chart1.ChartAreas["Area1"].AxisX.Title = "周波数 N [Hz]";  // X軸タイトル設定
-            chart1.ChartAreas["Area1"].AxisY.Title = "ノルム F [N]";  // Y軸タイトル設定
+            chart1.ChartAreas["Area1"].AxisX.Title = "周波数 f [Hz]";  // X軸タイトル設定
+            chart1.ChartAreas["Area1"].AxisY.Title = "周波数スペクトル |F(f)| [/]";  // Y軸タイトル設定
             
             // 以上、初期化処理
 
             String ChartName = str;
-            string[] xValues = new string[(x2.Length/2)];
-            int[] plot_y = new int[x2.Length / 2];
-            for(int j=0; j<plot_y.Length; j++)
-            {
-                //plot_y[j] = y2[plot_y.Length - j];
-                //y2[j] = Convert.ToInt32(Math.Log10(y2[j])*50);
-                int max = 1;
-                for(int i=0; i<plot_y.Length; i++)
-                {
-                    if (max < y2[i]) max = y2[i];
-                }
-                y2[j] = (int)Math.Log10(y2[j]/max) * 50;
-                plot_y[j] = y2[j];
-            }
-
-            chart1.Series.Clear();  //グラフ初期化
-
+            string[] xValues = new string[(y.Length/2)];
+           
+            
             chart1.Series.Add(ChartName);
-
             chart1.Series[ChartName].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
 
-            //x2[0] = x2.Length / 2 * 4; // x[0] はグラフ描写の開始点
+            int rate = 1000;
+            if (datamap.ContainsKey(filename))
+            {
+                rate = datamap[filename];
+                Console.WriteLine("sycceed, {0}", filename);
+            }
+
+            Axis plot_axis = new Axis(CNSTMAX, rate);
+            plot_axis.stringAxie(ref xValues);
+            
             for (int i = 0; i < xValues.Length; i++)
             {
-                //if(i+1 < x2.Length) x2[i+1] = x2[i] - 4;
-                //x2[i] = i * 4;
-                x2[i] = i;
-                xValues[i] = x2[i].ToString();
                 //グラフに追加するデータクラスを生成
                 DataPoint dp = new DataPoint();
                 //dp.SetValueXY(xValues[i], y2[]);  //XとYの値を設定
-                dp.SetValueXY(xValues[i], plot_y[i]);
+                dp.SetValueXY(xValues[i], y2[i]);
                 dp.IsValueShownAsLabel = false;  //グラフに値を表示するように指定
                 chart1.Series[ChartName].Points.Add(dp);   //グラフにデータ追加
             }
-
-            chart_name += chart_id.ToString();
-            chart_id++;
-
         }
 
         private void button3_Click(object sender, EventArgs e)
@@ -238,11 +234,88 @@ namespace _20160524
             //後始末をする
             //img.Dispose();
         }
+
+        private void radioButton4_CheckedChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void radioButton3_CheckedChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void radioButton2_CheckedChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void radioButton1_CheckedChanged(object sender, EventArgs e)
+        {
+        
+        }
+
+        private void button4_Click(object sender, EventArgs e)
+        {
+            WindowFunc windowfunc = WindowFunc.None;
+            foreach (RadioButton rdo in groupBox1.Controls)
+            {
+                if (rdo.Checked)
+                {
+                    String s = rdo.Text;
+                    windowfunc = (WindowFunc)Enum.Parse(typeof(WindowFunc), s);
+                }
+            }
+            double[] y_window = Fourier.Windowing(y, windowfunc);
+            int[] y2_window = new int[y_window.Length];
+            y2_window.CopyTo(y_window, 0);
+            DataViewer view = new DataViewer(y2_window);
+            view.Show();
+        }
     }
-    internal class Complex
+    class Axis
     {
-        public double real = 0.0;
-        public double imag = 0.0;
+        //double[] row_sign;
+        private double time; // 時間軸領域の目盛り
+        private double frequency; // 周波数領域の目盛り
+        public Axis()
+        {
+        }
+        public Axis(int sample_value, int sampling_frequency)
+        {
+            //row_sign = y;
+            time = 1 / sampling_frequency;
+            frequency = sampling_frequency / sample_value;
+        }
+        public void doubleAxie(ref double[] x)
+        {
+            x[0] = frequency;
+            for (int i = 1; i < x.Length; i++)
+                x[i] = x[i - 1] + frequency;
+        }
+        public void stringAxie(ref string[] x)
+        {
+            int dimF = (int)frequency;
+            int[] x2 = new int[x.Length];
+            x2[0] = dimF;
+            x[0] = dimF.ToString();
+            for (int i = 1; i < x.Length; i++) {
+                x2[i] = x2[i - 1] + dimF;
+                x[i] = x2[i].ToString();
+            }
+        }
+        public void intAxis(ref int[] x)
+        {
+            int dimF = (int)frequency;
+            x[0] = dimF;
+            for(int i=1; i<x.Length; i++)
+                x[i] = x[i - 1] + dimF;
+        }
+    }
+    class Complex
+    {
+        private double real = 0.0;
+        private double imag = 0.0;
         //Empty constructor
         public Complex()
         {
@@ -251,6 +324,10 @@ namespace _20160524
         {
             this.real = real;
             this.imag = img;
+        }
+        public Complex(double[] real)
+        {
+
         }
         override public string ToString()
         {
@@ -298,15 +375,9 @@ namespace _20160524
             }
         }
     }
-    internal class Fourier
+    class Fourier
     {
-        public enum WindowFunc
-        {
-            Hamming,
-            Hanning,
-            Blackman,
-            Rectangular
-        }
+        
         public static Complex[] HannWindow(Complex[] x)
         {
             int N = x.Length;
@@ -348,7 +419,6 @@ namespace _20160524
             }
             return windata;
         }
-
         public static Complex[] DFT(Complex[] x)
         {
             int N = x.Length;
@@ -398,6 +468,45 @@ namespace _20160524
                 X[k + N / 2] = E[k] - D[k];
             }
             return X;
+        }
+        public static double[] Execute(double[] y, FTFunc func, WindowFunc windwfunc)
+        {
+            //
+            Complex[] sign = new Complex[y.Length];
+            Complex[] done = new Complex[y.Length];
+            // 窓関数の実行
+            y = Fourier.Windowing(y, windwfunc);
+            // オイラー単位円への割当
+            for (int i = 0; i < y.Length; i++)
+            {
+                sign[i] = new Complex(y[i], 0);
+            }
+            // 任意の変換
+            if (FTFunc.DFT == func)
+                done = Fourier.DFT(sign);
+            else if(FTFunc.FFT == func)
+                    done = Fourier.FFT(sign);
+            for(int ii=0; ii<y.Length; ii++)
+            {
+                y[ii] = done[ii].magnitude;
+            }
+            Seikika(ref y); // referencive functioon
+            return y;
+        }
+        public static void Seikika(ref double[] y)
+        {
+            double max = 0;
+            for(int i=0; i<y.Length; i++)
+            {
+                if (max < y[i]) max = y[i];
+                if (y[i] < 0)
+                {
+                    max = 0;
+                    break;
+                }
+            }
+            for (int ii = 0; ii < y.Length; ii++)
+                y[ii] = y[ii] / max * 100;
         }
     }
 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,13 +13,12 @@ namespace _20160524
 {
     public partial class Egaku : Form
     {
-        private const int CNSTMAX = 256;
-        //private const int CNSTMAX = 512;
+        readonly private int CNSTMAX;   // 変数名は変えず、コンストラクタ内にて入力ファイルより変更できる変数
+        //private const int CNSTMAX = 256,512;
         private int Nmax;
 
-        private double[] y = new double[CNSTMAX];
-        private int[] y2 = new int[CNSTMAX];
-        private int[] x2 = new int[CNSTMAX];
+        private double[] y;       // 生のデータ
+        private int[] y2;            // 表示用のデータ
 
         public string fileName, safeFileName;
         private string fileout, yout;
@@ -32,11 +32,29 @@ namespace _20160524
             safeFileName = Form1.safeFileName;
             fileName = Form1.fileName;
 
-            // 画像を保存する名前を取得
+            // 画像を保存する名前 filename を取得
             // filename : String
             filename += System.IO.Path.GetFileName(fileName);
-        }
 
+            this.CNSTMAX = this.GetLinesOfTextFile();
+            y = new double[CNSTMAX];
+            y2 = new int[CNSTMAX];
+        }
+        public int GetLinesOfTextFile()
+        {
+            StreamReader  StReader= new StreamReader(this.fileName);
+            int LineCount = 0; int LineValidCount = 2;
+            while(StReader.Peek() >= 0)
+            {
+                StReader.ReadLine();
+                LineCount++;
+            }
+            StReader.Close();
+            while (LineCount >= LineValidCount) LineValidCount *= 2;
+            LineValidCount /= 2;
+            Console.WriteLine("ﾌｧｲﾙ内行数 = {0}\n有効行数 = {1}", LineCount,LineValidCount);
+            return LineValidCount;
+        }
         private void button1_Click(object sender, EventArgs e)
         {
             filename += (chart_id++).ToString();
@@ -79,7 +97,7 @@ namespace _20160524
 
         private void button2_Click(object sender, EventArgs e)
         {
-            byosya byosya = new byosya(y);
+            byosya byosya = new byosya(CNSTMAX, y, System.IO.Path.GetFileName(fileName));
             byosya.Show();
         }
 
@@ -96,7 +114,8 @@ namespace _20160524
             aver = 0; amax = 0; sum = 0; aby = 0;  seikika = 0;
             Nmax = CNSTMAX;
 
-            System.IO.StreamReader koeFile = new System.IO.StreamReader(fileName);
+            //System.IO.StreamReader koeFile = new System.IO.StreamReader(fileName);
+            StreamReader koeFile = new StreamReader(fileName);
 
             for (int i = 0; i < Nmax; i++)
             {
@@ -111,18 +130,17 @@ namespace _20160524
                 if (amax < y[i]) amax = y[i];
                 
                 y2[i] = Convert.ToInt32(buf);
-                x2[i] = i;
             }
                 koeFile.Close();
-            aver = sum / Nmax; sum = 0;
-            aby = amax;
+            aver = sum / Nmax; sum = 0; // (1)
+            aby = amax;                 // (2)
             for (int i = 0; i < Nmax; i++)
             {
                 y[i] -= aver;
-                sum += y[i]; //　この最大値は、平均値を除去した後のもの【使わない】
+                //sum += y[i]; //　この最大値は、平均値を除去した後のもの【使わない】
                 if (aby > y[i]) aby = y[i];
             }
-            seikika = aby * (-1);
+            seikika = aby * (-1);       // (3)
             if (seikika < amax) seikika = amax;
             // seikika は正規化をするために、信号値の絶対値の最大値を格納
             for (int i=0; i < Nmax; i++)
@@ -130,7 +148,7 @@ namespace _20160524
                 y[i] = y[i] / seikika * 100;
             }
             fileout = @"C:\Users\N.Ishikawa\Desktop\data\koeout.txt";
-            System.IO.StreamWriter kekkaout = new System.IO.StreamWriter(fileout);
+            StreamWriter kekkaout = new StreamWriter(fileout);
             for(int ii=0; ii<Nmax; ii++)
             {
                 y2[ii] = Convert.ToInt32(y[ii]);
