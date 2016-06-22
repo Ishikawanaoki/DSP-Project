@@ -12,10 +12,18 @@ namespace _20160524
 {
     public partial class Form1 : Form
     {
-        public string fileName, safefileName; //他のクラスでも使用
+        public string fileName, safeFileName; //他のクラスでも使用
+        //private int[] y2;
+
         public Form1()
         {
             InitializeComponent();
+
+        }
+
+        private void label1_Click(object sender, EventArgs e)
+        {
+
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -31,16 +39,16 @@ namespace _20160524
 
             fileName = ofp.FileName;
 
-            safefileName = ofp.SafeFileName;
+            safeFileName = ofp.SafeFileName;
 
             if (dr == DialogResult.OK)
             {
-                label1.Text = safefileName;
+                label1.Text = safeFileName;
                  // label1.Text = fileName; //  show file name with path
             }
 
-            // Egaku Egaku = new Egaku(this);
-            // Egaku.show();
+            Egaku Egaku = new Egaku(this);
+            Egaku.Show();
         }
     }
 }

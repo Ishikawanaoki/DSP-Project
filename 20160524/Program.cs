@@ -17,10 +17,6 @@ namespace _20160524
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new Form1());
-            for (int i = 0; i < 40; i++)
-            {
-                Console.WriteLine("Hello , world\n");
-            }
         }
     }
 }
