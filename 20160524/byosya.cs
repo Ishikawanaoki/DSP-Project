@@ -268,9 +268,22 @@ namespace _20160524
             }
             double[] y_window = Fourier.Windowing(y, windowfunc);
             int[] y2_window = new int[y_window.Length];
-            y2_window.CopyTo(y_window, 0);
+            //y2_window.CopyTo(y_window, 0);
+            for (int i = 0; i < y2_window.Length; i++)
+                y2_window[i] = (int)y_window[i];
             DataViewer view = new DataViewer(y2_window);
             view.Show();
+
+            // 結果をファイル出力する
+            String fileout = @"C:\Users\N.Ishikawa\Desktop\data\viewer_out.txt";
+            String yout;
+            System.IO.StreamWriter kekkaout = new System.IO.StreamWriter(fileout);
+            for (int iii = 0; iii < CNSTMAX; iii++)
+            {
+                yout = y2_window[iii].ToString("D10");
+                kekkaout.WriteLine(yout);
+            }
+            kekkaout.Close();
         }
     }
     class Axis
@@ -502,9 +515,23 @@ namespace _20160524
                 if (y[i] < 0)
                 {
                     max = 0;
+                    Seikika2(ref y);
                     break;
                 }
             }
+            for (int ii = 0; ii < y.Length; ii++)
+                y[ii] = y[ii] / max * 100;
+        }
+        public static void Seikika2(ref double[] y)
+        {
+            double max = 0;
+            double min = 100;
+            for (int i = 0; i < y.Length; i++)
+            {
+                if (max < y[i]) max = y[i];
+                if (min > y[i]) min = y[i];
+            }
+            max += min * (-1);
             for (int ii = 0; ii < y.Length; ii++)
                 y[ii] = y[ii] / max * 100;
         }

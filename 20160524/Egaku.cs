@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Windows.Forms.DataVisualization.Charting;
 
 namespace _20160524
 {
@@ -73,17 +74,14 @@ namespace _20160524
             String gname = "100Hz-2KAD";
 
             chart1.Series.Clear();  //グラフ初期化
-
             chart1.Series.Add(gname);
-            
             int[] xValues = new int[y2.Length];
-
-            chart1.Series[gname].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            chart1.Series[gname].ChartType = SeriesChartType.Line;
 
             for (int i = 0; i < xValues.Length; i++)
             {
                     //グラフに追加するデータクラスを生成
-                    System.Windows.Forms.DataVisualization.Charting.DataPoint dp = new System.Windows.Forms.DataVisualization.Charting.DataPoint();
+                    DataPoint dp = new DataPoint();
                     dp.SetValueXY(xValues[i], y2[i]);  //XとYの値を設定
                     dp.IsValueShownAsLabel = false;  //グラフに値を表示するように指定
                     chart1.Series[gname].Points.Add(dp);   //グラフにデータ追加
